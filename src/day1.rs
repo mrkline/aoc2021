@@ -1,21 +1,24 @@
-use aoc_runner_derive::aoc;
+use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
 
+#[aoc_generator(day1)]
+pub fn intenator(input: &str) -> Vec<u16> {
+    input.lines().map(|i| i.parse().unwrap()).collect()
+}
+
 #[aoc(day1, part1)]
-pub fn part1(input: &str) -> usize {
+pub fn part1(input: &[u16]) -> usize {
     input
-        .lines()
-        .map(|i| i.parse::<u16>().unwrap())
+        .iter()
         .tuple_windows()
         .filter(|(l, r)| r > l)
         .count()
 }
 
 #[aoc(day1, part2)]
-pub fn part2(input: &str) -> usize {
+pub fn part2(input: &[u16]) -> usize {
     input
-        .lines()
-        .map(|i| i.parse::<u16>().unwrap())
+        .iter()
         .tuple_windows()
         .map(|(a, b, c)| a + b + c)
         .tuple_windows()
