@@ -8,11 +8,7 @@ pub fn intenator(input: &str) -> Vec<u16> {
 
 #[aoc(day1, part1)]
 pub fn part1(input: &[u16]) -> usize {
-    input
-        .iter()
-        .tuple_windows()
-        .filter(|(l, r)| r > l)
-        .count()
+    input.windows(2).filter(|w| w[1] > w[0]).count()
 }
 
 #[aoc(day1, part2)]
