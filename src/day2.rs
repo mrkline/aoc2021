@@ -20,7 +20,7 @@ fn steer_line(line: &str) -> (Direction, i32) {
 
 #[aoc(day2, part1)]
 pub fn part1(input: &str) -> i64 {
-    let (mut pos_x, mut pos_y) = (0i32, 0i32);
+    let (mut pos_x, mut pos_y) = (0, 0);
     for (direction, amount) in input.lines().map(steer_line) {
         match direction {
             Direction::Forward => pos_x += amount,
@@ -33,8 +33,8 @@ pub fn part1(input: &str) -> i64 {
 
 #[aoc(day2, part2)]
 pub fn part2(input: &str) -> i64 {
-    let (mut pos_x, mut pos_y) = (0i32, 0i32);
-    let mut aim = 0i32;
+    let (mut pos_x, mut pos_y) = (0, 0);
+    let mut aim = 0;
     for (direction, amount) in input.lines().map(steer_line) {
         match direction {
             Direction::Forward => {
