@@ -1,14 +1,9 @@
-use aoc_runner_derive::{aoc, aoc_generator};
+use aoc_runner_derive::aoc;
 
 pub enum Direction {
     Up,
     Down,
     Forward,
-}
-
-#[aoc_generator(day2)]
-fn steer_inputs(input: &str) -> Vec<(Direction, i32)> {
-    input.lines().map(steer_line).collect()
 }
 
 fn steer_line(line: &str) -> (Direction, i32) {
@@ -24,10 +19,9 @@ fn steer_line(line: &str) -> (Direction, i32) {
 }
 
 #[aoc(day2, part1)]
-pub fn part1(input: &[(Direction, i32)]) -> i64 {
+pub fn part1(input: &str) -> i64 {
     let (mut pos_x, mut pos_y) = (0i32, 0i32);
-    for (direction, amount) in input {
-        let amount = *amount;
+    for (direction, amount) in input.lines().map(steer_line) {
         match direction {
             Direction::Forward => pos_x += amount,
             Direction::Up => pos_y -= amount,
@@ -38,11 +32,10 @@ pub fn part1(input: &[(Direction, i32)]) -> i64 {
 }
 
 #[aoc(day2, part2)]
-pub fn part2(input: &[(Direction, i32)]) -> i64 {
+pub fn part2(input: &str) -> i64 {
     let (mut pos_x, mut pos_y) = (0i32, 0i32);
     let mut aim = 0i32;
-    for (direction, amount) in input {
-        let amount = *amount;
+    for (direction, amount) in input.lines().map(steer_line) {
         match direction {
             Direction::Forward => {
                 pos_x += amount;
