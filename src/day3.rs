@@ -23,7 +23,7 @@ fn find_gamma(input: &[u16]) -> u16 {
 
     // In gamma, a bit is 1 if that bit position in inputs was commonly 1.
     let mut gamma = 0u16;
-    for (i, count) in bit_counts.iter_mut().enumerate() {
+    for (i, count) in bit_counts.iter().enumerate() {
         if *count >= input.len() / 2 {
             gamma |= 1 << i;
         }
