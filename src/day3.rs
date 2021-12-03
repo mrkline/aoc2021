@@ -10,7 +10,7 @@ pub fn parse_bits(input: &str) -> Vec<u16> {
 
 fn find_gamma(input: &[u16]) -> u16 {
     // 12-bit nums
-    let mut bit_counts: [usize; 12] = [0; 12];
+    let mut bit_counts: [u32; 12] = [0; 12];
 
     // Count the occurrence of each bit in inputs
     for num in input {
@@ -24,7 +24,7 @@ fn find_gamma(input: &[u16]) -> u16 {
     // In gamma, a bit is 1 if that bit position in inputs was commonly 1.
     let mut gamma = 0u16;
     for (i, count) in bit_counts.iter().enumerate() {
-        if *count >= input.len() / 2 {
+        if *count as usize >= input.len() / 2 {
             gamma |= 1 << i;
         }
     }
