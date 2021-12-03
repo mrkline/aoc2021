@@ -10,7 +10,7 @@ pub fn parse_bits(input: &str) -> Vec<u16> {
 
 fn find_gamma(input: &[u16]) -> u16 {
     // 12-bit nums
-    let mut bit_counts: [u32; 12] = [0; 12];
+    let mut bit_counts: [u16; 12] = [0; 12];
 
     // Count the occurrence of each bit in inputs
     for num in input {
