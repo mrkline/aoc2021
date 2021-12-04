@@ -1,16 +1,14 @@
 use aoc_runner_derive::aoc;
+
+use fixedbitset::FixedBitSet;
+
 use std::fmt::{Debug, Error, Formatter};
 use std::str::Lines;
 
 #[derive(Default)]
-struct Space {
-    num: u8,
-    marked: bool,
-}
-
-#[derive(Default)]
 struct Board {
-    spaces: Vec<Space>,
+    spaces: Vec<u8>,
+    marks: FixedBitSet,
 }
 
 impl Board {
@@ -18,12 +16,9 @@ impl Board {
         let spaces = input
             .take(5) // Call Paul Desmond
             .map(|line| {
-                // Map each line into a vec of Spaces
+                // Map each line into a vec of numbers
                 line.split_ascii_whitespace()
-                    .map(|tok| {
-                        let num = tok.parse().unwrap();
-                        Space { num, marked: false }
-                    })
+                    .map(|tok| tok.parse().unwrap())
                     .collect()
             })
             .fold(vec![], |mut acc, mut l| {
@@ -32,27 +27,34 @@ impl Board {
                 acc
             });
         assert_eq!(spaces.len(), 25);
-        Board { spaces }
+        let marks = FixedBitSet::with_capacity(25);
+        Board { spaces, marks }
     }
 
-    fn space(&self, x: usize, y: usize) -> &Space {
-        &self.spaces[y * 5 + x]
+    fn space(&self, x: usize, y: usize) -> u8 {
+        self.spaces[y * 5 + x]
+    }
+
+    fn is_marked(&self, x: usize, y: usize) -> bool {
+        self.marks.contains(y * 5 + x)
     }
 
     fn mark(&mut self, num: u8) {
-        for space in &mut self.spaces {
-            space.marked |= space.num == num;
+        for (i, space) in self.spaces.iter().enumerate() {
+            if *space == num {
+                self.marks.insert(i);
+            }
         }
     }
 
     fn won(&self) -> bool {
         for y in 0..5 {
-            if (0..5).map(|x| self.space(x, y)).all(|s| s.marked) {
+            if (0..5).all(|x| self.is_marked(x, y)) {
                 return true;
             }
         }
         for x in 0..5 {
-            if (0..5).map(|y| self.space(x, y)).all(|s| s.marked) {
+            if (0..5).all(|y| self.is_marked(x, y)) {
                 return true;
             }
         }
@@ -61,11 +63,16 @@ impl Board {
 
     fn score(&self, last_num: u8) -> u32 {
         let last_num = last_num as u32;
-        let unmarked = self
+        let unmarked: u32 = self
             .spaces
             .iter()
-            .filter(|s| !s.marked)
-            .fold(0u32, |acc, s| acc + s.num as u32);
+            .enumerate()
+            .filter_map(|(i, s)| if !self.marks.contains(i) {
+                Some(*s as u32)
+            } else {
+                None
+            })
+            .sum();
 
         last_num * unmarked
     }
@@ -77,22 +84,22 @@ impl Debug for Board {
             writeln!(
                 f,
                 "[{:2} {:2} {:2} {:2} {:2}]",
-                self.space(0, y).num,
-                self.space(1, y).num,
-                self.space(2, y).num,
-                self.space(3, y).num,
-                self.space(4, y).num
+                self.space(0, y),
+                self.space(1, y),
+                self.space(2, y),
+                self.space(3, y),
+                self.space(4, y)
             )?;
         }
         for y in 0..5 {
             writeln!(
                 f,
                 "{{{} {} {} {} {}}}",
-                self.space(0, y).marked as u8,
-                self.space(1, y).marked as u8,
-                self.space(2, y).marked as u8,
-                self.space(3, y).marked as u8,
-                self.space(4, y).marked as u8,
+                self.is_marked(0, y) as u8,
+                self.is_marked(1, y) as u8,
+                self.is_marked(2, y) as u8,
+                self.is_marked(3, y) as u8,
+                self.is_marked(4, y) as u8,
             )?;
         }
         Ok(())
