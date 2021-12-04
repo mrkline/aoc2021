@@ -47,12 +47,12 @@ impl Board {
 
     fn won(&self) -> bool {
         for y in 0..5 {
-            if (0..5).map(|x| self.space(x, y)).all(|s| s.marked) {
+            if (0..5).all(|x| self.space(x, y).marked) {
                 return true;
             }
         }
         for x in 0..5 {
-            if (0..5).map(|y| self.space(x, y)).all(|s| s.marked) {
+            if (0..5).all(|y| self.space(x, y).marked) {
                 return true;
             }
         }
