@@ -15,20 +15,22 @@ struct Board {
 
 impl Board {
     fn parse(input: &mut Lines<'_>) -> Self {
-        // Call Paul Desmond
-        let lines = input.take(5).fold(String::new(), |mut acc, l| {
-            // Chain instead of string cat?
-            acc.push_str(l);
-            acc.push(' ');
-            acc
-        });
-        let spaces: Vec<Space> = lines
-            .split_ascii_whitespace()
-            .map(|tok| {
-                let num = tok.parse().unwrap();
-                Space { num, marked: false }
+        let spaces = input
+            .take(5) // Call Paul Desmond
+            .map(|line| {
+                // Map each line into a vec of Spaces
+                line.split_ascii_whitespace()
+                    .map(|tok| {
+                        let num = tok.parse().unwrap();
+                        Space { num, marked: false }
+                    })
+                    .collect()
             })
-            .collect();
+            .fold(vec![], |mut acc, mut l| {
+                // fold them together
+                acc.append(&mut l);
+                acc
+            });
         assert_eq!(spaces.len(), 25);
         Board { spaces }
     }
