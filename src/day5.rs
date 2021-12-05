@@ -33,33 +33,9 @@ fn parse_line(input: &str) -> Line {
     Line { start, end }
 }
 
-#[aoc(day5, part1)]
-pub fn part1(input: &str) -> usize {
-    let hv_lines = input.lines().map(parse_line).filter(|l| !l.is_angled());
-
+fn overlaps<L: Iterator<Item = Line>>(lines: L) -> usize {
     // We could construct a bounding box, then allocate counts for every point,
     // but assume the area is fairly sparse and just use a hashmap of points instead.
-    let mut counts: FxHashMap<Point, u16> = FxHashMap::default();
-    for line in hv_lines {
-        let mut x = line.start.x;
-        let mut y = line.start.y;
-        let dx = (line.end.x - line.start.x).signum();
-        let dy = (line.end.y - line.start.y).signum();
-        while y != line.end.y + dy || x != line.end.x + dx {
-            *counts.entry(Point { x, y }).or_insert(0) += 1;
-            x += dx;
-            y += dy;
-        }
-    }
-
-    counts.values().filter(|overlaps| **overlaps >= 2).count()
-}
-
-#[aoc(day5, part2)]
-pub fn part2(input: &str) -> usize {
-    let lines = input.lines().map(parse_line);
-
-    // Ditto
     let mut counts: FxHashMap<Point, u16> = FxHashMap::default();
     for line in lines {
         let mut x = line.start.x;
@@ -74,4 +50,16 @@ pub fn part2(input: &str) -> usize {
     }
 
     counts.values().filter(|overlaps| **overlaps >= 2).count()
+}
+
+#[aoc(day5, part1)]
+pub fn part1(input: &str) -> usize {
+    let hv_lines = input.lines().map(parse_line).filter(|l| !l.is_angled());
+    overlaps(hv_lines)
+}
+
+#[aoc(day5, part2)]
+pub fn part2(input: &str) -> usize {
+    let lines = input.lines().map(parse_line);
+    overlaps(lines)
 }
