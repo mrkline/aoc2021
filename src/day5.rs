@@ -1,12 +1,12 @@
 use aoc_runner_derive::aoc;
+use rustc_hash::FxHashMap;
 
-use std::collections::HashMap;
 use std::mem;
 
 #[derive(Debug, Eq, PartialEq, Hash)]
 struct Point {
-    x: i32,
-    y: i32,
+    x: i16,
+    y: i16,
 }
 
 #[derive(Debug)]
@@ -75,7 +75,7 @@ pub fn part1(input: &str) -> usize {
 
     // We could construct a bounding box, then allocate counts for every point,
     // but assume the area is fairly sparse and just use a hashmap of points instead.
-    let mut counts: HashMap<Point, u16> = HashMap::new();
+    let mut counts: FxHashMap<Point, u16> = FxHashMap::default();
     for line in &hv_lines {
         if line.is_horizontal() {
             let y = line.start.y;
@@ -106,7 +106,7 @@ pub fn part2(input: &str) -> usize {
         .collect();
 
     // Ditto
-    let mut counts: HashMap<Point, u16> = HashMap::new();
+    let mut counts: FxHashMap<Point, u16> = FxHashMap::default();
     for line in &lines {
         if line.is_vertical() {
             let x = line.start.x;
