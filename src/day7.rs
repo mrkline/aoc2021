@@ -9,11 +9,14 @@ fn linear_fuel_cost(input: &[i16], to: i64) -> i64 {
 }
 
 fn quadratic_fuel_cost(input: &[i16], to: i64) -> i64 {
-    input.iter().map(|c| {
-        let dist = (*c as i64 - to).abs();
-        // (1..=distance).sum::<i64>()
-        (dist * (dist + 1)) / 2
-    }).sum()
+    input
+        .iter()
+        .map(|c| {
+            let dist = (*c as i64 - to).abs();
+            // (1..=distance).sum::<i64>()
+            (dist * (dist + 1)) / 2
+        })
+        .sum()
 }
 
 fn median(input: &mut [i16]) -> i16 {
