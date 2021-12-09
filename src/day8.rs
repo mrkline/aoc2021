@@ -99,7 +99,6 @@ fn parse_line(line: &str) -> Display {
 type Mapping = FxHashMap<u8, u8>;
 
 fn find_mapping(segs: &[u8]) -> Mapping {
-
     //   0:      1:      2:      3:      4:
     //  aaaa    ....    aaaa    aaaa    ....
     // b    c  .    c  .    c  .    c  b    c
