@@ -12,24 +12,20 @@ pub struct Heightmap {
 
 impl Heightmap {
     fn cell(&self, x: usize, y: usize) -> i8 {
-        self.cells[x + y * self.width]
+        if x < self.width && y < self.height {
+            self.cells[x + y * self.width]
+        } else {
+            -1
+        }
     }
 
     fn risk_of_cell(&self, x: usize, y: usize) -> Option<i8> {
         let mut adjacents = [-1i8; 4];
 
-        if x > 0 {
-            adjacents[0] = self.cell(x - 1, y);
-        }
-        if x < self.width - 1 {
-            adjacents[1] = self.cell(x + 1, y);
-        }
-        if y > 0 {
-            adjacents[2] = self.cell(x, y - 1);
-        }
-        if y < self.height - 1 {
-            adjacents[3] = self.cell(x, y + 1);
-        }
+        adjacents[0] = self.cell(x - 1, y);
+        adjacents[1] = self.cell(x + 1, y);
+        adjacents[2] = self.cell(x, y - 1);
+        adjacents[3] = self.cell(x, y + 1);
 
         let center = self.cell(x, y);
 
@@ -97,26 +93,16 @@ pub fn part1(input: &Heightmap) -> i64 {
 
 pub fn basin_size(input: &Heightmap, visited: &mut FixedBitSet, x: usize, y: usize) -> i64 {
     let idx = x + y * input.width;
-    if visited.contains(idx) {
+    if x >= input.width || y >= input.height || visited.contains(idx) {
         return 0;
     }
 
     visited.insert(idx);
 
-    let mut size = 1;
-    if x > 0 {
-        size += basin_size(input, visited, x - 1, y);
-    }
-    if x < input.width - 1 {
-        size += basin_size(input, visited, x + 1, y);
-    }
-    if y > 0 {
-        size += basin_size(input, visited, x, y - 1);
-    }
-    if y < input.height - 1 {
-        size += basin_size(input, visited, x, y + 1);
-    }
-    size
+    1 + basin_size(input, visited, x - 1, y)
+        + basin_size(input, visited, x + 1, y)
+        + basin_size(input, visited, x, y - 1)
+        + basin_size(input, visited, x, y + 1)
 }
 
 #[aoc(day9, part2)]
