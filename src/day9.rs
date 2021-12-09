@@ -19,7 +19,7 @@ impl Heightmap {
         }
     }
 
-    fn risk_of_cell(&self, x: usize, y: usize) -> Option<i8> {
+    fn risk_of_cell(&self, x: usize, y: usize) -> i8 {
         let mut adjacents = [-1i8; 4];
 
         adjacents[0] = self.cell(x - 1, y);
@@ -34,9 +34,9 @@ impl Heightmap {
             .filter(|a| *a >= 0)
             .all(|a| a > center)
         {
-            Some(center + 1)
+            center + 1
         } else {
-            None
+            0
         }
     }
 }
@@ -83,9 +83,7 @@ pub fn part1(input: &Heightmap) -> i64 {
 
     for y in 0..input.height {
         for x in 0..input.width {
-            if let Some(r) = input.risk_of_cell(x, y) {
-                risk += r as i64;
-            }
+            risk += input.risk_of_cell(x, y) as i64;
         }
     }
     risk
