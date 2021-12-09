@@ -9,5 +9,6 @@ authors = ["Matt Kline <matt@bitbashing.io>"]
 [dependencies]
 aoc-runner = "0.3"
 aoc-runner-derive = "0.3"
+fixedbitset = "0.4"
 itertools = "0.10"
 rustc-hash = "1.1"
