@@ -19,7 +19,7 @@ impl Heightmap {
         }
     }
 
-    fn risk_of_cell(&self, x: usize, y: usize) -> i8 {
+    fn low_point_cell(&self, x: usize, y: usize) -> Option<i8> {
         let mut adjacents = [-1i8; 4];
 
         adjacents[0] = self.cell(x - 1, y);
@@ -34,7 +34,15 @@ impl Heightmap {
             .filter(|a| *a >= 0)
             .all(|a| a > center)
         {
-            center + 1
+            Some(center)
+        } else {
+            None
+        }
+    }
+
+    fn risk_of_cell(&self, x: usize, y: usize) -> i8 {
+        if let Some(cell) = self.low_point_cell(x, y) {
+            cell + 1
         } else {
             0
         }
@@ -105,6 +113,15 @@ pub fn basin_size(input: &Heightmap, visited: &mut FixedBitSet, x: usize, y: usi
 
 #[aoc(day9, part2)]
 pub fn part2(input: &Heightmap) -> i64 {
+    let mut low_points = FixedBitSet::with_capacity(input.cells.len());
+    for y in 0..input.height {
+        for x in 0..input.width {
+            if input.low_point_cell(x, y).is_some() {
+                low_points.insert(x + y * input.width);
+            }
+        }
+    }
+
     let mut visited = FixedBitSet::with_capacity(input.cells.len());
 
     // Mark all max-height cells as visited.
@@ -114,13 +131,10 @@ pub fn part2(input: &Heightmap) -> i64 {
 
     let mut basins = Vec::new();
 
-    for y in 0..input.height {
-        for x in 0..input.width {
-            let bs = basin_size(input, &mut visited, x, y);
-            if bs > 0 {
-                basins.push(bs);
-            }
-        }
+    for idx in low_points.ones() {
+        let y = idx / input.width;
+        let x = idx % input.width;
+        basins.push(basin_size(input, &mut visited, x, y));
     }
 
     basins.sort_unstable();
