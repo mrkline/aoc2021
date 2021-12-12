@@ -2,6 +2,8 @@ use aoc_runner_derive::aoc;
 
 use std::fmt::{Debug, Error, Formatter};
 
+use fixedbitset::FixedBitSet;
+
 pub struct Octopi {
     cells: Vec<i8>,
     width: usize,
@@ -16,17 +18,17 @@ impl Octopi {
     }
 
     fn propagate_flashes(&mut self) {
-        let mut to_prop = Vec::new();
+        let mut to_prop = FixedBitSet::with_capacity(self.cells.len());
 
-        for y in 0..self.height {
-            for x in 0..self.width {
-                if self.cells[x + y * self.width] > 9 {
-                    to_prop.push((x, y));
-                }
+        for (idx, cell) in self.cells.iter().enumerate() {
+            if *cell > 9 {
+                to_prop.insert(idx);
             }
         }
 
-        for (x, y) in to_prop.into_iter() {
+        for idx in to_prop.ones() {
+            let y = idx / self.width;
+            let x = idx % self.width;
             self.propagate_flash(x, y);
         }
     }
@@ -53,7 +55,6 @@ impl Octopi {
             self.propagate_flash(x, y);
         }
     }
-
 
     fn reset_flashes(&mut self) -> i64 {
         let mut flashes = 0;
