@@ -10,6 +10,7 @@ pub enum Fold {
     Y(u16),
 }
 
+#[derive(Default, Clone)]
 pub struct Transparency {
     dots: FixedBitSet,
     width: usize,
@@ -166,12 +167,7 @@ fn points_to_transparency(points: &[(u16, u16)]) -> Transparency {
 fn parse_folds<'a>(lines: std::str::Lines<'a>) -> Vec<Fold> {
     lines
         .map(|line| {
-            assert!(line.starts_with("fold along"));
-            let mut words = line.split_ascii_whitespace();
-            words.next(); // "fold"
-            words.next(); // "along"
-
-            let mut fold_tokens = words.next().unwrap().split('=');
+            let mut fold_tokens = line["fold along ".len()..].split('=');
             let axis = fold_tokens.next().unwrap();
             let val = fold_tokens.next().unwrap().parse().unwrap();
 
@@ -185,29 +181,7 @@ fn parse_folds<'a>(lines: std::str::Lines<'a>) -> Vec<Fold> {
 }
 
 #[aoc_generator(day13)]
-pub fn parse(_input: &str) -> (Transparency, Vec<Fold>) {
-    let input = r"6,10
-0,14
-9,10
-0,3
-10,4
-4,11
-6,0
-6,12
-4,1
-0,13
-10,12
-3,4
-3,0
-8,4
-1,10
-2,14
-8,10
-9,0
-
-fold along y=7
-fold along x=5";
-
+pub fn parse(input: &str) -> (Transparency, Vec<Fold>) {
     let (points, remaining_lines) = parse_points(input);
     let transparency = points_to_transparency(&points);
     let folds = parse_folds(remaining_lines);
@@ -217,17 +191,11 @@ fold along x=5";
 
 #[aoc(day13, part1)]
 pub fn part1((transparency, folds): &(Transparency, Vec<Fold>)) -> usize {
-    println!("{:?}\n{:?}", transparency, folds);
-
-    let transparency = transparency.fold(folds[0]);
-    println!("{:?}\n{:?}", transparency, folds);
-
-    let transparency = transparency.fold(folds[1]);
-    println!("{:?}\n{:?}", transparency, folds);
-    42
+    transparency.fold(folds[0]).dots.ones().count()
 }
 
 #[aoc(day13, part2)]
-pub fn part2((transparency, folds): &(Transparency, Vec<Fold>)) -> usize {
-    42
+pub fn part2((transparency, folds): &(Transparency, Vec<Fold>)) -> String {
+    let folded_message = folds.iter().fold(transparency.clone(), |t, f| t.fold(*f));
+    format!("\n{:?}", folded_message)
 }
