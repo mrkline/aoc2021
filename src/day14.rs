@@ -3,6 +3,8 @@ use aoc_runner_derive::aoc;
 use itertools::Itertools;
 use rustc_hash::FxHashMap;
 
+use std::sync::atomic::{AtomicUsize, Ordering};
+
 type Rules = FxHashMap<[u8; 2], u8>;
 
 pub fn parse(input: &str) -> (&[u8], Rules) {
@@ -64,9 +66,12 @@ pub fn part1(input: &str) -> usize {
 }
 
 // Again, but with less memory
-fn count_after_steps(chain: &[u8], rules: &Rules, counts: &mut FxHashMap<u8, usize>, steps_remaining: isize) {
+fn count_after_steps(chain: &[u8], rules: &Rules, counts: &mut FxHashMap<u8, AtomicUsize>, steps_remaining: isize) {
     for p in chain {
-        *counts.entry(*p).or_insert(0) += 1;
+        counts.entry(*p).or_default().fetch_add(1, Ordering::Relaxed);
+    }
+    for r in rules.values() {
+        counts.entry(*r).or_default();
     }
 
     for (a, b) in chain.iter().tuple_windows() {
@@ -74,7 +79,7 @@ fn count_after_steps(chain: &[u8], rules: &Rules, counts: &mut FxHashMap<u8, usi
     }
 }
 
-fn count_after_steps_rec(a: u8, b: u8, rules: &Rules, counts: &mut FxHashMap<u8, usize>, steps_remaining: isize) {
+fn count_after_steps_rec(a: u8, b: u8, rules: &Rules, counts: &FxHashMap<u8, AtomicUsize>, steps_remaining: isize) {
     if steps_remaining == 0 {
         return;
     }
@@ -82,9 +87,11 @@ fn count_after_steps_rec(a: u8, b: u8, rules: &Rules, counts: &mut FxHashMap<u8,
     let next_step = steps_remaining - 1;
 
     if let Some(c) = rules.get(&[a, b]) {
-        *counts.entry(*c).or_insert(0) += 1;
-        count_after_steps_rec(a, *c, rules, counts, next_step);
-        count_after_steps_rec(*c, b, rules, counts, next_step);
+        counts.get(c).unwrap().fetch_add(1, Ordering::Relaxed);
+        rayon::join(
+         || count_after_steps_rec(a, *c, rules, counts, next_step),
+         || count_after_steps_rec(*c, b, rules, counts, next_step)
+        );
     }
 }
 
@@ -93,10 +100,10 @@ pub fn part2(input: &str) -> usize {
     let (template, rules) = parse(input);
 
     let mut counts = FxHashMap::default();
-    count_after_steps(template, &rules, &mut counts, 10);
+    count_after_steps(template, &rules, &mut counts, 40);
 
-    let most_common = counts.values().max().unwrap();
-    let least_common = counts.values().min().unwrap();
+    let most_common = counts.values().map(|v| v.load(Ordering::SeqCst)).max().unwrap();
+    let least_common = counts.values().map(|v| v.load(Ordering::SeqCst)).min().unwrap();
 
     most_common - least_common
 }
