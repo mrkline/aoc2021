@@ -37,42 +37,66 @@ fn step(before: &[u8], rules: &Rules) -> Vec<u8> {
     after
 }
 
-#[aoc(day14, part1)]
-pub fn part1(_input: &str) -> usize {
-    let input = r"NNCB
+fn count(vals: &[u8]) -> FxHashMap<u8, usize> {
+    let mut counts = FxHashMap::default();
 
-CH -> B
-HH -> N
-CB -> H
-NH -> C
-HB -> C
-HC -> B
-HN -> C
-NN -> C
-BH -> H
-NC -> B
-NB -> B
-BN -> B
-BB -> N
-BC -> B
-CC -> N
-CN -> C";
-
-    let (template, rules) = parse(input);
-    let mut template = template.to_vec();
-    for _ in 0..=5 {
-        println!(
-            "{}: {}",
-            template.len(),
-            std::str::from_utf8(&template).unwrap()
-        );
-        template = step(&template, &rules);
+    for v in vals {
+        *counts.entry(*v).or_insert(0) += 1;
     }
-    42
+
+    counts
+}
+
+#[aoc(day14, part1)]
+pub fn part1(input: &str) -> usize {
+    let (template, rules) = parse(input);
+    let mut chain = template.to_vec();
+    for _ in 0..10 {
+        chain = step(&chain, &rules);
+    }
+
+    let counts = count(&chain);
+
+    let most_common = counts.values().max().unwrap();
+    let least_common = counts.values().min().unwrap();
+
+    most_common - least_common
+}
+
+// Again, but with less memory
+fn count_after_steps(chain: &[u8], rules: &Rules, counts: &mut FxHashMap<u8, usize>, steps_remaining: isize) {
+    for p in chain {
+        *counts.entry(*p).or_insert(0) += 1;
+    }
+
+    for (a, b) in chain.iter().tuple_windows() {
+        count_after_steps_rec(*a, *b, rules, counts, steps_remaining);
+    }
+}
+
+fn count_after_steps_rec(a: u8, b: u8, rules: &Rules, counts: &mut FxHashMap<u8, usize>, steps_remaining: isize) {
+    if steps_remaining == 0 {
+        return;
+    }
+
+    let next_step = steps_remaining - 1;
+
+    if let Some(c) = rules.get(&[a, b]) {
+        *counts.entry(*c).or_insert(0) += 1;
+        count_after_steps_rec(a, *c, rules, counts, next_step);
+        count_after_steps_rec(*c, b, rules, counts, next_step);
+    }
 }
 
 #[aoc(day14, part2)]
 pub fn part2(input: &str) -> usize {
-    let (_template, _rules) = parse(input);
-    42
+    let (template, rules) = parse(input);
+
+    let mut counts = FxHashMap::default();
+    count_after_steps(template, &rules, &mut counts, 10);
+
+    let most_common = counts.values().max().unwrap();
+    let least_common = counts.values().min().unwrap();
+
+    most_common - least_common
 }
