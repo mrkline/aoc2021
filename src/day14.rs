@@ -3,6 +3,8 @@ use aoc_runner_derive::aoc;
 use itertools::Itertools;
 use rustc_hash::FxHashMap;
 
+use std::rc::Rc;
+
 type Rules = FxHashMap<[u8; 2], u8>;
 
 pub fn parse(input: &str) -> (&[u8], Rules) {
@@ -75,8 +77,8 @@ fn count_after_steps(chain: &[u8], rules: &Rules, steps: i8) -> FxHashMap<u8, us
 
     for (a, b) in chain.iter().tuple_windows() {
         let insertions = insertions_after_steps(&[*a, *b], rules, steps, &mut memory);
-        for (k, v) in insertions {
-            *counts.entry(k).or_insert(0) += v;
+        for (k, v) in &*insertions {
+            *counts.entry(*k).or_insert(0) += v;
         }
     }
 
@@ -88,13 +90,13 @@ fn insertions_after_steps(
     pair: &[u8; 2],
     rules: &Rules,
     steps: i8,
-    memory: &mut FxHashMap<([u8; 2], i8), FxHashMap<u8, usize>>,
-) -> FxHashMap<u8, usize> {
+    memory: &mut FxHashMap<([u8; 2], i8), Rc<FxHashMap<u8, usize>>>,
+) -> Rc<FxHashMap<u8, usize>> {
     if steps == 0 {
-        return FxHashMap::default();
+        return Rc::new(FxHashMap::default());
     }
     if let Some(mem) = memory.get(&(*pair, steps)) {
-        return mem.clone();
+        return Rc::clone(mem);
     }
 
     let mut counts = FxHashMap::default();
@@ -106,15 +108,16 @@ fn insertions_after_steps(
         let left = insertions_after_steps(&[pair[0], *c], rules, next_step, memory);
         let right = insertions_after_steps(&[*c, pair[1]], rules, next_step, memory);
 
-        for (k, v) in left {
-            *counts.entry(k).or_insert(0) += v;
+        for (k, v) in &*left {
+            *counts.entry(*k).or_insert(0) += v;
         }
-        for (k, v) in right {
-            *counts.entry(k).or_insert(0) += v;
+        for (k, v) in &*right {
+            *counts.entry(*k).or_insert(0) += v;
         }
     }
 
-    memory.insert((*pair, steps), counts.clone());
+    let counts = Rc::new(counts);
+    memory.insert((*pair, steps), Rc::clone(&counts));
     counts
 }
 
