@@ -64,36 +64,65 @@ pub fn part1(input: &str) -> usize {
 }
 
 // Again, but with less memory
-fn count_after_steps(chain: &[u8], rules: &Rules, counts: &mut FxHashMap<u8, usize>, steps_remaining: isize) {
+fn count_after_steps(chain: &[u8], rules: &Rules, steps: i8) -> FxHashMap<u8, usize> {
+    let mut counts = FxHashMap::default();
+
     for p in chain {
         *counts.entry(*p).or_insert(0) += 1;
     }
 
+    let mut memory = FxHashMap::default();
+
     for (a, b) in chain.iter().tuple_windows() {
-        count_after_steps_rec(*a, *b, rules, counts, steps_remaining);
+        let insertions = insertions_after_steps(&[*a, *b], rules, steps, &mut memory);
+        for (k, v) in insertions {
+            *counts.entry(k).or_insert(0) += v;
+        }
     }
+
+    counts
 }
 
-fn count_after_steps_rec(a: u8, b: u8, rules: &Rules, counts: &mut FxHashMap<u8, usize>, steps_remaining: isize) {
-    if steps_remaining == 0 {
-        return;
+/// Memoized: The insertions done by the given pair after n steps
+fn insertions_after_steps(
+    pair: &[u8; 2],
+    rules: &Rules,
+    steps: i8,
+    memory: &mut FxHashMap<([u8; 2], i8), FxHashMap<u8, usize>>,
+) -> FxHashMap<u8, usize> {
+    if steps == 0 {
+        return FxHashMap::default();
+    }
+    if let Some(mem) = memory.get(&(*pair, steps)) {
+        return mem.clone();
     }
 
-    let next_step = steps_remaining - 1;
+    let mut counts = FxHashMap::default();
 
-    if let Some(c) = rules.get(&[a, b]) {
+    if let Some(c) = rules.get(pair) {
         *counts.entry(*c).or_insert(0) += 1;
-        count_after_steps_rec(a, *c, rules, counts, next_step);
-        count_after_steps_rec(*c, b, rules, counts, next_step);
+
+        let next_step = steps - 1;
+        let left = insertions_after_steps(&[pair[0], *c], rules, next_step, memory);
+        let right = insertions_after_steps(&[*c, pair[1]], rules, next_step, memory);
+
+        for (k, v) in left {
+            *counts.entry(k).or_insert(0) += v;
+        }
+        for (k, v) in right {
+            *counts.entry(k).or_insert(0) += v;
+        }
     }
+
+    memory.insert((*pair, steps), counts.clone());
+    counts
 }
 
 #[aoc(day14, part2)]
 pub fn part2(input: &str) -> usize {
     let (template, rules) = parse(input);
 
-    let mut counts = FxHashMap::default();
-    count_after_steps(template, &rules, &mut counts, 10);
+    let counts = count_after_steps(template, &rules, 40);
 
     let most_common = counts.values().max().unwrap();
     let least_common = counts.values().min().unwrap();
