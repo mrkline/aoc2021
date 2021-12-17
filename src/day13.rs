@@ -114,7 +114,7 @@ impl Debug for Transparency {
     }
 }
 
-fn parse_points<'a>(input: &'a str) -> (Vec<(u16, u16)>, std::str::Lines<'a>) {
+fn parse_points(input: &str) -> (Vec<(u16, u16)>, std::str::Lines<'_>) {
     let mut points = Vec::new();
 
     let mut lines = input.lines();
@@ -164,7 +164,7 @@ fn points_to_transparency(points: &[(u16, u16)]) -> Transparency {
     dotted
 }
 
-fn parse_folds<'a>(lines: std::str::Lines<'a>) -> Vec<Fold> {
+fn parse_folds(lines: std::str::Lines<'_>) -> Vec<Fold> {
     lines
         .map(|line| {
             let mut fold_tokens = line["fold along ".len()..].split('=');
