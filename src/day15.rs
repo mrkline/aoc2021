@@ -9,12 +9,12 @@ pub struct Map {
     height: usize,
 }
 
-type Coordinate = (i8, i8);
+type Coordinate = (usize, usize);
 
 impl Map {
     fn risk(&self, c: Coordinate) -> i8 {
-        let x = c.0 as usize;
-        let y = c.1 as usize;
+        let x = c.0;
+        let y = c.1;
         assert!(x < self.width);
         assert!(y < self.height);
         self.cells[x + y * self.width]
@@ -35,19 +35,6 @@ impl Debug for Map {
 
 #[aoc_generator(day15)]
 pub fn parse(input: &str) -> Map {
-    /*
-        let input = r"1163751742
-    1381373672
-    2136511328
-    3694931569
-    7463417111
-    1319128137
-    1359912421
-    3125421639
-    1293138521
-    2311944581";
-        */
-
     let mut cells: Vec<i8> = Vec::new();
     let mut width: usize = 0;
     let mut height: usize = 0;
@@ -75,7 +62,7 @@ fn a_star(map: &Map) -> Score {
     use pathfinding::directed::astar::astar;
 
     const START: Coordinate = (0, 0);
-    let end: Coordinate = ((map.width - 1) as i8, (map.height - 1) as i8);
+    let end: Coordinate = (map.width - 1, map.height - 1);
 
     let successors = |c: &Coordinate| {
         let neighbors = [
@@ -86,9 +73,7 @@ fn a_star(map: &Map) -> Score {
         ];
         neighbors
             .into_iter()
-            .filter(|(nx, ny)| {
-                *nx >= 0 && *ny >= 0 && *nx < map.width as i8 && *ny < map.height as i8
-            })
+            .filter(|(nx, ny)| *nx < map.width && *ny < map.height)
             .map(|n| (n, map.risk(n) as Score))
     };
 
@@ -105,11 +90,34 @@ fn a_star(map: &Map) -> Score {
 
 #[aoc(day15, part1)]
 pub fn part1(input: &Map) -> Score {
-    // println!("{:?}", input);
     a_star(input)
 }
 
 #[aoc(day15, part2)]
-pub fn part2(input: &Map) -> usize {
-    42
+pub fn part2(input: &Map) -> Score {
+    let width = input.width * 5;
+    let height = input.height * 5;
+    let mut cells = Vec::with_capacity(input.cells.len() * 5 * 5);
+
+    for dup_y in 0..5 {
+        for y in 0..input.height {
+            for dup_x in 0..5 {
+                let dup = dup_y + dup_x;
+                for x in 0..input.width {
+                    let mut new_val = input.risk((x, y)) + dup;
+                    if new_val > 9 {
+                        new_val -= 9;
+                    }
+                    cells.push(new_val);
+                }
+            }
+        }
+    }
+
+    let embiggened = Map {
+        cells,
+        width,
+        height,
+    };
+    a_star(&embiggened)
 }
