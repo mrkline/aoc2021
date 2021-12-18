@@ -1,7 +1,5 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 
-use rustc_hash::{FxHashMap, FxHashSet};
-
 use std::fmt::{Debug, Error, Formatter};
 
 #[derive(Default, Clone)]
@@ -73,98 +71,38 @@ pub fn parse(input: &str) -> Map {
 
 type Score = i32;
 
-/// Once we have a path to the end, follow links back to the start
-/// to find the cost of the entire path.
-fn backtrace_from(
-    map: &Map,
-    came_from: &FxHashMap<Coordinate, Coordinate>,
-    current: Coordinate,
-) -> Score {
-    if let Some(whence) = came_from.get(&current) {
-        let prev_costs = backtrace_from(map, came_from, *whence);
-        // println!("({}, {})", current.0, current.1);
-        let cost = map.risk(current) as Score;
-        prev_costs + cost
-    } else {
-        0
-    }
-}
+fn a_star(map: &Map) -> Score {
+    use pathfinding::directed::astar::astar;
 
-/// Find the lowest-cost node in the open set, pop it, and return it.
-///
-/// Ideally this would be a min heap, but std::collectoins::BinaryHeap can't
-/// take some comparator function - items have to be Ord themselves.
-/// This would mean both:
-/// 1. Some boilerplate for each item in the set to impl Ord based on the score below
-/// 2. Each item in the set would need some references to map, scores, or a Fn that referenced them,
-/// 3. Sad mutable borrow issues arising from pt 2.
-fn pop_open_set(
-    open_set: &mut FxHashSet<Coordinate>,
-    map: &Map,
-    scores: &FxHashMap<Coordinate, Score>,
-) -> Option<Coordinate> {
-    let smallest = open_set.iter().copied().min_by_key(|c| {
-        // A* heuristic: Distance to the end node
+    const START: Coordinate = (0, 0);
+    let end: Coordinate = ((map.width - 1) as i8, (map.height - 1) as i8);
+
+    let successors = |c: &Coordinate| {
+        let neighbors = [
+            (c.0 - 1, c.1),
+            (c.0 + 1, c.1),
+            (c.0, c.1 - 1),
+            (c.0, c.1 + 1),
+        ];
+        neighbors
+            .into_iter()
+            .filter(|(nx, ny)| {
+                *nx >= 0 && *ny >= 0 && *nx < map.width as i8 && *ny < map.height as i8
+            })
+            .map(|n| (n, map.risk(n) as Score))
+    };
+
+    let average_risk: i64 =
+        map.cells.iter().map(|c| *c as i64).sum::<i64>() / map.cells.len() as i64;
+
+    let heuristic = |c: &Coordinate| -> Score {
         let dy = (c.1 - map.height as i8) as f64;
         let dx = (c.0 - map.width as i8) as f64;
-        let hypot = dx.hypot(dy) as Score;
+        (dx.hypot(dy) / average_risk as f64) as Score
+    };
 
-        (*scores.get(c).unwrap_or(&Score::MAX)).saturating_add(hypot)
-    });
-
-    if let Some(smol) = smallest {
-        open_set.remove(&smol);
-        Some(smol)
-    } else {
-        None
-    }
-}
-
-fn a_star(map: &Map) -> Score {
-    let mut scores = FxHashMap::default();
-    scores.insert((0, 0), 0);
-
-    let mut came_from: FxHashMap<Coordinate, Coordinate> = FxHashMap::default();
-
-    let mut open_set: FxHashSet<Coordinate> = FxHashSet::default();
-    open_set.insert((0, 0));
-
-    let end = ((map.width - 1) as i8, (map.height - 1) as i8);
-
-    while let Some(current) = pop_open_set(&mut open_set, map, &scores) {
-        // println!("At ({}, {})", current.0, current.1);
-
-        if current == end {
-            return backtrace_from(map, &came_from, current);
-        }
-
-        let current_score = *scores.get(&current).unwrap_or(&Score::MAX);
-
-        let neighbors = [
-            (current.0 - 1, current.1),
-            (current.0 + 1, current.1),
-            (current.0, current.1 - 1),
-            (current.0, current.1 + 1),
-        ];
-
-        for neighbor in neighbors.into_iter().filter(|(nx, ny)| {
-            *nx >= 0 && *ny >= 0 && *nx < map.width as i8 && *ny < map.height as i8
-        }) {
-            let risk = map.risk(neighbor) as Score;
-
-            // println!("Neighbor ({}, {}) is {} + {}", neighbor.0, neighbor.1, current_score, risk);
-            let neighbor_score_through_current = current_score + risk;
-            let current_neighbor_score = *scores.get(&neighbor).unwrap_or(&Score::MAX);
-
-            if neighbor_score_through_current < current_neighbor_score {
-                came_from.insert(neighbor, current);
-                scores.insert(neighbor, neighbor_score_through_current);
-                open_set.insert(neighbor);
-            }
-        }
-    }
-
-    unreachable!("No path to the end!");
+    let search_result = astar(&START, successors, heuristic, |c| *c == end);
+    search_result.expect("No path to end").1
 }
 
 #[aoc(day15, part1)]
