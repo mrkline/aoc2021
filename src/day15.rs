@@ -92,13 +92,11 @@ fn a_star(map: &Map) -> Score {
             .map(|n| (n, map.risk(n) as Score))
     };
 
-    let average_risk: i64 =
-        map.cells.iter().map(|c| *c as i64).sum::<i64>() / map.cells.len() as i64;
-
     let heuristic = |c: &Coordinate| -> Score {
-        let dy = (c.1 - map.height as i8) as f64;
-        let dx = (c.0 - map.width as i8) as f64;
-        (dx.hypot(dy) / average_risk as f64) as Score
+        let dy = c.1 as Score - map.height as Score;
+        let dx = c.0 as Score - map.width as Score;
+        // Assume the average risk is 5.
+        (dx + dy) * 5
     };
 
     let search_result = astar(&START, successors, heuristic, |c| *c == end);
@@ -107,7 +105,7 @@ fn a_star(map: &Map) -> Score {
 
 #[aoc(day15, part1)]
 pub fn part1(input: &Map) -> Score {
-    println!("{:?}", input);
+    // println!("{:?}", input);
     a_star(input)
 }
 
