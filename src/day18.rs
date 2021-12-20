@@ -1,4 +1,4 @@
-use aoc_runner_derive::{aoc, aoc_generator};
+use aoc_runner_derive::aoc;
 
 use std::fmt;
 
@@ -166,8 +166,7 @@ fn explode_rec(pair: &mut SnailPair, depth: usize) -> Splode {
     Splode::None
 }
 
-#[aoc_generator(day18)]
-fn parse_lines(input: &str) -> SnailPair {
+fn add_lines(input: &str) -> SnailPair {
     input
         .lines()
         .map(parse_line)
@@ -211,7 +210,7 @@ fn parse_element(bytes: &mut &[u8]) -> SnailElement {
     }
 }
 
-fn pair_magnitude(pair: &SnailPair) -> i64 {
+fn magnitude(pair: &SnailPair) -> i64 {
     let l = element_magnitude(&*pair.left);
     let r = element_magnitude(&*pair.right);
     l * 3 + r * 2
@@ -220,13 +219,39 @@ fn pair_magnitude(pair: &SnailPair) -> i64 {
 fn element_magnitude(elem: &SnailElement) -> i64 {
     match elem {
         SnailElement::Num(n) => *n as i64,
-        SnailElement::Pair(p) => pair_magnitude(p)
+        SnailElement::Pair(p) => magnitude(p),
     }
 }
 
 #[aoc(day18, part1)]
-fn part1(pair: &SnailPair) -> i64 {
-    pair_magnitude(pair)
+fn part1(input: &str) -> i64 {
+    let pair = add_lines(input);
+    magnitude(&pair)
+}
+
+#[aoc(day18, part2)]
+fn part2(input: &str) -> i64 {
+    let pairs: Vec<_> = input
+        .lines()
+        .map(parse_line)
+        .map(SnailElement::Pair)
+        .collect();
+
+    let mut max = 0;
+
+    for (i, outer) in pairs.iter().enumerate() {
+        for (j, inner) in pairs.iter().enumerate() {
+            if i == j {
+                continue;
+            }
+            let sum = magnitude(&add(outer.clone(), inner.clone()));
+            if sum > max {
+                max = sum;
+            }
+        }
+    }
+
+    max
 }
 
 #[cfg(test)]
@@ -244,25 +269,25 @@ mod test {
     }
 
     #[test]
-    fn basic_line_fold() {
+    fn basic_line_addition() {
         let input = "[1,1]\n[2,2]\n[3,3]\n[4,4]";
         assert_eq!(
-            parse_lines(&input).to_string(),
+            add_lines(&input).to_string(),
             "[[[[1,1],[2,2]],[3,3]],[4,4]]"
         );
     }
 
     #[test]
-    fn add_lines() {
+    fn line_addition_with_reduction() {
         let mut input = "[1,1]\n[2,2]\n[3,3]\n[4,4]\n[5,5]";
         assert_eq!(
-            parse_lines(&input).to_string(),
+            add_lines(&input).to_string(),
             "[[[[3,0],[5,3]],[4,4]],[5,5]]"
         );
 
         input = "[1,1]\n[2,2]\n[3,3]\n[4,4]\n[5,5]\n[6,6]";
         assert_eq!(
-            parse_lines(&input).to_string(),
+            add_lines(&input).to_string(),
             "[[[[5,0],[7,4]],[5,5]],[6,6]]"
         );
 
@@ -278,7 +303,7 @@ mod test {
 [[[5,[7,4]],7],1]
 [[[[4,2],2],6],[8,7]]";
         assert_eq!(
-            parse_lines(&input).to_string(),
+            add_lines(&input).to_string(),
             "[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]"
         );
 
@@ -293,7 +318,7 @@ mod test {
 [[2,[[7,7],7]],[[5,8],[[9,3],[0,2]]]]
 [[[[5,2],5],[8,[3,7]]],[[5,[7,5]],[4,4]]]";
         assert_eq!(
-            parse_lines(&input).to_string(),
+            add_lines(&input).to_string(),
             "[[[[6,6],[7,6]],[[7,7],[7,0]]],[[[7,7],[7,7]],[[7,8],[9,9]]]]"
         );
     }
