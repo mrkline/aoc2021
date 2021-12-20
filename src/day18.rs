@@ -1,4 +1,4 @@
-use aoc_runner_derive::aoc;
+use aoc_runner_derive::{aoc, aoc_generator};
 
 use std::fmt;
 
@@ -50,23 +50,12 @@ fn add(left: SnailElement, right: SnailElement) -> SnailPair {
     let right = Box::new(right);
     let mut pair = SnailPair { left, right };
 
-    println!("{}", pair);
-    while reduce(&mut pair) {
-        println!("{}", pair);
-    }
+    while reduce(&mut pair) {}
     pair
 }
 
 fn reduce(pair: &mut SnailPair) -> bool {
-    if explode(pair) {
-        println!("SPLODE");
-        true
-    } else if split(pair) {
-        println!("SPLIT");
-        true
-    } else {
-        false
-    }
+    explode(pair) || split(pair)
 }
 
 fn split(pair: &mut SnailPair) -> bool {
@@ -131,20 +120,18 @@ fn explode_rec(pair: &mut SnailPair, depth: usize) -> Splode {
         _ => (),
     };
 
-    let mut boom = false;
-
     if let SnailElement::Pair(p) = &mut *pair.left {
         match explode_rec(p, depth + 1) {
             Splode::None => {}
+            // Bail early on all explosions so we only consider the leftmost
             Splode::Boom => {
-                boom = true;
+                return Splode::Boom;
             }
             Splode::PropagateLeft(l) => {
                 return Splode::PropagateLeft(l);
             }
             Splode::PropagateRight(r) => {
                 *pair.right.left_leaf() += r;
-                // Bail so we only consider the leftmost explosion
                 return Splode::Boom;
             }
             Splode::PropagateBoth((l, r)) => {
@@ -159,14 +146,14 @@ fn explode_rec(pair: &mut SnailPair, depth: usize) -> Splode {
         match explode_rec(p, depth + 1) {
             Splode::None => {}
             Splode::Boom => {
-                boom = true;
+                return Splode::Boom;
             }
             Splode::PropagateRight(r) => {
                 return Splode::PropagateRight(r);
             }
             Splode::PropagateLeft(l) => {
                 *pair.left.right_leaf() += l;
-                boom = true;
+                return Splode::Boom;
             }
             Splode::PropagateBoth((l, r)) => {
                 *pair.left.right_leaf() += l;
@@ -176,13 +163,10 @@ fn explode_rec(pair: &mut SnailPair, depth: usize) -> Splode {
         }
     }
 
-    if boom {
-        Splode::Boom
-    } else {
-        Splode::None
-    }
+    Splode::None
 }
 
+#[aoc_generator(day18)]
 fn parse_lines(input: &str) -> SnailPair {
     input
         .lines()
@@ -227,10 +211,22 @@ fn parse_element(bytes: &mut &[u8]) -> SnailElement {
     }
 }
 
+fn pair_magnitude(pair: &SnailPair) -> i64 {
+    let l = element_magnitude(&*pair.left);
+    let r = element_magnitude(&*pair.right);
+    l * 3 + r * 2
+}
+
+fn element_magnitude(elem: &SnailElement) -> i64 {
+    match elem {
+        SnailElement::Num(n) => *n as i64,
+        SnailElement::Pair(p) => pair_magnitude(p)
+    }
+}
+
 #[aoc(day18, part1)]
-fn part1(input: &str) -> i64 {
-    let pairs = parse_lines(input);
-    42
+fn part1(pair: &SnailPair) -> i64 {
+    pair_magnitude(pair)
 }
 
 #[cfg(test)]
@@ -270,62 +266,36 @@ mod test {
             "[[[[5,0],[7,4]],[5,5]],[6,6]]"
         );
 
-        // Big example:
-        let parse = |inp: &str| SnailElement::Pair(parse_line(inp));
-
-        let mut cumulative = add(
-            parse("[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]]"),
-            parse("[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]"),
-        );
+        // Big examples:
+        input = r"[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]]
+[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]
+[[2,[[0,8],[3,4]]],[[[6,7],1],[7,[1,6]]]]
+[[[[2,4],7],[6,[0,5]]],[[[6,8],[2,8]],[[2,1],[4,5]]]]
+[7,[5,[[3,8],[1,4]]]]
+[[2,[2,2]],[8,[8,1]]]
+[2,9]
+[1,[[[9,3],9],[[9,0],[0,7]]]]
+[[[5,[7,4]],7],1]
+[[[[4,2],2],6],[8,7]]";
         assert_eq!(
-            cumulative.to_string(),
-            "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]]"
+            parse_lines(&input).to_string(),
+            "[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]"
         );
 
-        println!("HOLD MAH BEER");
-
-        cumulative = add(
-            SnailElement::Pair(cumulative),
-            parse("[[2,[[0,8],[3,4]]],[[[6,7],1],[7,[1,6]]]]"),
-        );
+        input = r"[[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]
+[[[5,[2,8]],4],[5,[[9,9],0]]]
+[6,[[[6,2],[5,6]],[[7,6],[4,7]]]]
+[[[6,[0,7]],[0,9]],[4,[9,[9,0]]]]
+[[[7,[6,4]],[3,[1,3]]],[[[5,5],1],9]]
+[[6,[[7,3],[3,2]]],[[[3,8],[5,7]],4]]
+[[[[5,4],[7,7]],8],[[8,3],8]]
+[[9,3],[[9,9],[6,[4,9]]]]
+[[2,[[7,7],7]],[[5,8],[[9,3],[0,2]]]]
+[[[[5,2],5],[8,[3,7]]],[[5,[7,5]],[4,4]]]";
         assert_eq!(
-            cumulative.to_string(),
-            "[[[[6,7],[6,7]],[[7,7],[0,7]]],[[[8,7],[7,7]],[[8,8],[8,0]]]]"
+            parse_lines(&input).to_string(),
+            "[[[[6,6],[7,6]],[[7,7],[7,0]]],[[[7,7],[7,7]],[[7,8],[9,9]]]]"
         );
-
-        // All together:
-        /*
-                input = r"[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]]
-        [7,[[[3,7],[4,3]],[[6,3],[8,8]]]]
-        [[2,[[0,8],[3,4]]],[[[6,7],1],[7,[1,6]]]]
-        [[[[2,4],7],[6,[0,5]]],[[[6,8],[2,8]],[[2,1],[4,5]]]]
-        [7,[5,[[3,8],[1,4]]]]
-        [[2,[2,2]],[8,[8,1]]]
-        [2,9]
-        [1,[[[9,3],9],[[9,0],[0,7]]]]
-        [[[5,[7,4]],7],1]
-        [[[[4,2],2],6],[8,7]]";
-                assert_eq!(
-                    parse_lines(&input).to_string(),
-                    "[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]"
-                );
-
-
-                input = r"[[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]
-        [[[5,[2,8]],4],[5,[[9,9],0]]]
-        [6,[[[6,2],[5,6]],[[7,6],[4,7]]]]
-        [[[6,[0,7]],[0,9]],[4,[9,[9,0]]]]
-        [[[7,[6,4]],[3,[1,3]]],[[[5,5],1],9]]
-        [[6,[[7,3],[3,2]]],[[[3,8],[5,7]],4]]
-        [[[[5,4],[7,7]],8],[[8,3],8]]
-        [[9,3],[[9,9],[6,[4,9]]]]
-        [[2,[[7,7],7]],[[5,8],[[9,3],[0,2]]]]
-        [[[[5,2],5],[8,[3,7]]],[[5,[7,5]],[4,4]]]";
-                assert_eq!(
-                    parse_lines(&input).to_string(),
-                    "[[[[6,6],[7,6]],[[7,7],[7,0]]],[[[7,7],[7,7]],[[7,8],[9,9]]]]"
-                );
-                */
     }
 
     #[test]
