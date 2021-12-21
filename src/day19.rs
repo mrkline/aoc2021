@@ -1,8 +1,9 @@
+#![allow(unused)]
 use aoc_runner_derive::{aoc, aoc_generator};
 
 use std::fmt;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, PartialOrd, Ord)]
 struct Posit {
     x: i32,
     y: i32,
@@ -49,6 +50,7 @@ fn parse_readings(lines: &mut std::str::Lines<'_>) -> Option<Readings> {
         };
     }
 
+    readings.sort_unstable();
     Some(readings)
 }
 
@@ -60,8 +62,23 @@ fn parse_posit(line: &str) -> Posit {
     Posit { x, y, z }
 }
 
+/// Gets all 24 orientations of a given coordinate.
+fn orientations(starting: &Posit) -> [Posit; 24] {
+    // https://stackoverflow.com/a/16467849
+    let mut o = [Posit::default(); 24];
+
+    // Original orientation
+    o[..].fill(*starting);
+    o
+}
+
 #[aoc(day19, part1)]
 fn part1(readings: &[Readings]) -> i64 {
     println!("{:#?}", readings);
     42
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
 }
