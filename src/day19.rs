@@ -1,10 +1,10 @@
 #![allow(unused)]
 use aoc_runner_derive::{aoc, aoc_generator};
 
-use std::fmt;
 use nalgebra as na;
+use std::fmt;
 
-type Posit = na::Vector3<i32>;
+type Posit = na::geometry::Point3<i32>;
 
 type Readings = Vec<Posit>;
 
@@ -40,7 +40,7 @@ fn parse_readings(lines: &mut std::str::Lines<'_>) -> Option<Readings> {
         };
     }
 
-    readings.sort_unstable_by_key(|v| (v.x, v.y, v.z));
+    // readings.sort_unstable_by_key(|v| (v.x, v.y, v.z));
     Some(readings)
 }
 
@@ -109,7 +109,7 @@ fn all_axis_rotations() -> Vec<Rotation> {
 }
 
 fn nth_rotation(n: usize) -> &'static Rotation {
-    lazy_static::lazy_static!{
+    lazy_static::lazy_static! {
         static ref ROTATIONS: Vec<Rotation> = all_axis_rotations();
     }
     &ROTATIONS[n]
@@ -117,14 +117,69 @@ fn nth_rotation(n: usize) -> &'static Rotation {
 
 #[aoc(day19, part1)]
 fn part1(readings: &[Readings]) -> i64 {
-    // println!("{:#?}", readings);
-    for r in all_axis_rotations() {
-        print!("{}", r);
-    }
     42
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn rotations() {
+        let input = r"--- scanner 0 ---
+-1,-1,1
+-2,-2,2
+-3,-3,3
+-2,-3,1
+5,6,-4
+8,0,7
+
+--- scanner 0 ---
+1,-1,1
+2,-2,2
+3,-3,3
+2,-1,3
+-5,4,-6
+-8,-7,0
+
+--- scanner 0 ---
+-1,-1,-1
+-2,-2,-2
+-3,-3,-3
+-1,-3,-2
+4,6,5
+-7,0,8
+
+--- scanner 0 ---
+1,1,-1
+2,2,-2
+3,3,-3
+1,3,-2
+-4,-6,5
+7,0,8
+
+--- scanner 0 ---
+1,1,1
+2,2,2
+3,3,3
+3,1,2
+-6,-4,-5
+0,7,-8";
+
+        let scanners = parse_scanners(input);
+
+        let first_scanner = &scanners[0];
+
+        for s in scanners.iter().skip(1) {
+            // Find the rotation that gives us the nth orientation
+            let right_rotation: &Rotation = (0..24)
+                .map(nth_rotation)
+                .find(|r| (*r * s.last().unwrap()) == *first_scanner.last().unwrap())
+                .unwrap();
+
+            for (first, reoriented) in first_scanner.iter().zip(s.iter()) {
+                assert_eq!(*first, right_rotation * reoriented);
+            }
+        }
+    }
 }
