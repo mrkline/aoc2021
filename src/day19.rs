@@ -2,19 +2,9 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 
 use std::fmt;
+use nalgebra as na;
 
-#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, PartialOrd, Ord)]
-struct Posit {
-    x: i32,
-    y: i32,
-    z: i32,
-}
-
-impl fmt::Display for Posit {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}, {}, {})", self.x, self.y, self.z)
-    }
-}
+type Posit = na::Vector3<i32>;
 
 type Readings = Vec<Posit>;
 
@@ -50,7 +40,7 @@ fn parse_readings(lines: &mut std::str::Lines<'_>) -> Option<Readings> {
         };
     }
 
-    readings.sort_unstable();
+    readings.sort_unstable_by_key(|v| (v.x, v.y, v.z));
     Some(readings)
 }
 
@@ -59,22 +49,78 @@ fn parse_posit(line: &str) -> Posit {
     let x = dimensions.next().unwrap();
     let y = dimensions.next().unwrap();
     let z = dimensions.next().unwrap();
-    Posit { x, y, z }
+    Posit::new(x, y, z)
 }
 
-/// Gets all 24 orientations of a given coordinate.
-fn orientations(starting: &Posit) -> [Posit; 24] {
-    // https://stackoverflow.com/a/16467849
-    let mut o = [Posit::default(); 24];
+type Rotation = na::Matrix3<i32>;
 
-    // Original orientation
-    o[..].fill(*starting);
-    o
+#[rustfmt::skip]
+fn roll(m: &Rotation) -> Rotation {
+    // def roll(v): return (v[0],v[2],-v[1])
+    const ROLLER: Rotation = Rotation::new(
+        1, 0, 0,
+        0, 0, 1,
+        0, -1, 0
+    );
+    m * ROLLER
+}
+
+#[rustfmt::skip]
+fn turn(m: &Rotation) -> Rotation {
+    // def turn(v): return (-v[1],v[0],v[2])
+    const TURNER: Rotation = Rotation::new(
+        0, -1, 0,
+        1, 0, 0,
+        0, 0, 1
+    );
+    m * TURNER
+}
+
+/// Produce all 24 rotation matrices around three axes
+///
+/// https://stackoverflow.com/a/16467849
+fn all_axis_rotations() -> Vec<Rotation> {
+    // def sequence (v):
+    //     for cycle in range(2):
+    //         for step in range(3):  # Yield RTTT 3 times
+    //             v = roll(v)
+    //             yield(v)           #    Yield R
+    //             for i in range(3): #    Yield TTT
+    //                 v = turn(v)
+    //                 yield(v)
+    //         v = roll(turn(roll(v)))  # Do RTR
+    let mut rotations = Vec::with_capacity(24);
+    let mut v = Rotation::identity();
+
+    for _ in 0..2 {
+        for _ in 0..3 {
+            rotations.push(v);
+            v = roll(&v);
+            for _ in 0..3 {
+                rotations.push(v);
+                v = turn(&v);
+            }
+        }
+        v = roll(&turn(&roll(&v)));
+    }
+
+    assert_eq!(rotations.len(), 24);
+    rotations
+}
+
+fn nth_rotation(n: usize) -> &'static Rotation {
+    lazy_static::lazy_static!{
+        static ref ROTATIONS: Vec<Rotation> = all_axis_rotations();
+    }
+    &ROTATIONS[n]
 }
 
 #[aoc(day19, part1)]
 fn part1(readings: &[Readings]) -> i64 {
-    println!("{:#?}", readings);
+    // println!("{:#?}", readings);
+    for r in all_axis_rotations() {
+        print!("{}", r);
+    }
     42
 }
 
