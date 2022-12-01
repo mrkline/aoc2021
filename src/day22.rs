@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use aoc_runner_derive::{aoc, aoc_generator};
 
 use bitvec::prelude::*;
@@ -15,11 +17,11 @@ struct BoundingBox {
 
 impl BoundingBox {
     fn dimensions(&self) -> Point {
-        self.max - self.min
+        (self.max - self.min).into()
     }
 
     fn volume(&self) -> i64 {
-        let d = self.dimensions()
+        let d = self.dimensions();
         d.x as i64 * d.y as i64 * d.z as i64
     }
 
@@ -78,44 +80,6 @@ struct Instruction {
     on: bool,
 }
 
-#[derive(Debug, Clone)]
-enum ActiveArea {
-    On(BoundingBox),
-    Mixed(BoundingBox, BitVec)
-}
-
-impl ActiveArea {
-    fn bounds(&self) -> &BoundingBox {
-        match self {
-            ActiveArea::On(b) => b,
-            ActiveArea::Mixed(b, _) => b
-        }
-    }
-}
-
-
-fn activate(area: &ActiveArea, to_enable: &BoundingBox) -> ActiveArea {
-    match area {
-        On(bb) if bb.contains_box(to_enable) => {
-            // No-op, everything is already on here.
-            area.clone()
-        },
-        On(bb) => {
-            let new_box = bb.expand(to_enable);
-            let dims = bb.dimensions();
-
-            // Alright, we're going to start to have complicated geometry here.
-            // Let's use a big ol bitmap for the volume.
-            let voxels = BitVec::with_capacity(new_box.area());
-
-            for z in 0..=dims.z {
-            }
-
-            // We could do another pass to shrink the bounding box...
-        }
-    }
-}
-
 #[aoc_generator(day22)]
 fn parse_instructions(input: &str) -> Vec<Instruction> {
     input.lines().map(parse_instruction).collect()
@@ -163,6 +127,36 @@ fn parse_axis(dim: &str) -> (i32, i32) {
 }
 
 #[aoc(day22, part1)]
-fn part1(instructions: &[Instruction]) -> i64 {
-    42
+fn part1(instructions: &[Instruction]) -> usize {
+    let mut voxels: BitVec<Lsb0, usize> = BitVec::repeat(false, 101*101*101);
+
+    let mut touch = |x, y, z, on| {
+        let index = ((z + 50) * 101 * 101) + ((y + 50) * 101) + (x + 50);
+        voxels.set(index as usize, on);
+    };
+
+    let interested_area = BoundingBox {
+        min: Point::new(-50, -50, -50),
+        max: Point::new(50, 50, 50),
+    };
+
+    for inst in instructions {
+        let b = &inst.bounds;
+        if !interested_area.overlaps_box(b) {
+            continue
+        }
+
+        for z in -50..=50 {
+            for y in -50..=50 {
+                for x in -50..=50 {
+                    let p = Point::new(x, y, z);
+                    if b.contains_point(&p) {
+                        touch(x, y, z, inst.on);
+                    }
+                }
+            }
+        }
+    }
+
+    voxels.count_ones()
 }
